@@ -45,15 +45,20 @@ app.post("/template", async (req, res) => {
         
 })
 
-app.post("/chat", (req, res) => {
-    const messages = req.body.prompt 
-    anthropic.messages.stream({
+app.post("/chat", async (req, res) => {
+    const messages = req.body.messages;
+    const response = await anthropic.messages.create({
         messages: messages,
-        model: 'claude-3-7-sonnet-20250219',
+        model: 'claude-3-5-sonnet-20241022',
         max_tokens: 8000,
         system: getSystemPrompt()
     })
-    console.log("Messages param:", JSON.stringify(messages, null, 2));
+
+    console.log(response);
+
+    res.json({
+        response: (response.content[0] as TextBlock)?.text
+    });
 })
 
 app.listen(3000)

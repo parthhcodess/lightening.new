@@ -26,10 +26,10 @@ const LandingPage = () => {
           className="max-w-4xl mx-auto text-center"
         >
           <h1 className="text-6xl font-bold text-white mb-6">
-            Create Your Dream Website
+            Lightening
           </h1>
           <p className="text-xl text-gray-300 mb-12">
-            Transform your ideas into reality with AI-powered website generation
+            Transform your ideas into reality with lightening speed
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">

@@ -49,16 +49,20 @@ app.post("/template", (req, res) => __awaiter(void 0, void 0, void 0, function* 
     res.status(403).json({ message: "You can't access this" });
     return;
 }));
-app.post("/chat", (req, res) => {
-    const messages = req.body.prompt;
-    anthropic.messages.stream({
+app.post("/chat", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const messages = req.body.messages;
+    const response = yield anthropic.messages.create({
         messages: messages,
-        model: 'claude-3-7-sonnet-20250219',
+        model: 'claude-3-5-sonnet-20241022',
         max_tokens: 8000,
         system: (0, prompts_1.getSystemPrompt)()
     });
-    console.log("Messages param:", JSON.stringify(messages, null, 2));
-});
+    console.log(response);
+    res.json({
+        response: (_a = response.content[0]) === null || _a === void 0 ? void 0 : _a.text
+    });
+}));
 app.listen(3000);
 // async function main() {
 //     anthropic.messages.stream({
