@@ -11,6 +11,7 @@
   "description": "",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
+    "@types/cors": "^2.8.17",
     "dotenv": "^16.4.7",
     "typescript": "^5.8.2"
   },

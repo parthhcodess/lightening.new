@@ -18,8 +18,10 @@ const sdk_1 = __importDefault(require("@anthropic-ai/sdk"));
 const prompts_1 = require("./prompts");
 const node_1 = require("./defaults/node");
 const react_1 = require("./defaults/react");
+const cors_1 = __importDefault(require("cors"));
 const anthropic = new sdk_1.default();
 const app = (0, express_1.default)();
+app.use((0, cors_1.default)());
 app.use(express_1.default.json());
 app.post("/template", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const prompt = req.body.prompt;
@@ -27,26 +29,26 @@ app.post("/template", (req, res) => __awaiter(void 0, void 0, void 0, function* 
         messages: [{
                 role: 'user', content: prompt
             }],
-        model: 'claude-3-7-sonnet-20250219',
+        model: 'claude-3-5-sonnet-20241022',
         max_tokens: 200,
         system: "Return either node or react based on what do you think this project should be. Only return a single word either 'node' or 'react'. Do not return anything extra"
     });
     const answer = response.content[0].text; // react or node
     if (answer == "react") {
         res.json({
-            prompts: [prompts_1.BASE_PROMPT, `Project Files:\n\nThe following is a list of all project files and their complete contents that are currently visible and accessible to you.\n\n${react_1.basePrompt}Here is a list of files that exist on the file system but are not being shown to you:\n\n  - .gitignore\n  - package-lock.json\n`],
+            prompts: [prompts_1.BASE_PROMPT, `Here is an artifact that contains all files of the project visible to you.\nConsider the contents of ALL files in the project.\n\n${react_1.basePrompt}\n\nHere is a list of files that exist on the file system but are not being shown to you:\n\n  - .gitignore\n  - package-lock.json\n`],
             uiPrompts: [react_1.basePrompt]
         });
         return;
     }
     if (answer === "node") {
         res.json({
-            prompts: [`Project Files:\n\nThe following is a list of all project files and their complete contents that are currently visible and accessible to you.\n\n${node_1.basePrompt}Here is a list of files that exist on the file system but are not being shown to you:\n\n  - .gitignore\n  - package-lock.json\n`],
+            prompts: [`Here is an artifact that contains all files of the project visible to you.\nConsider the contents of ALL files in the project.\n\n${react_1.basePrompt}\n\nHere is a list of files that exist on the file system but are not being shown to you:\n\n  - .gitignore\n  - package-lock.json\n`],
             uiPrompts: [node_1.basePrompt]
         });
         return;
     }
-    res.status(403).json({ message: "You can't access this" });
+    res.status(403).json({ message: "You cant access this" });
     return;
 }));
 app.post("/chat", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -64,21 +66,3 @@ app.post("/chat", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     });
 }));
 app.listen(3000);
-// async function main() {
-//     anthropic.messages.stream({
-//         messages: [{
-//             role: 'user', content: ""
-//         }, {
-//             role: 'user', content: "{{BASE_PROMPT}}\n\n```\n\n"
-//         }, {
-//             role: "user",
-//             content: "Create a todo app"
-//         }],
-//         model: 'claude-3-7-sonnet-20250219',
-//         max_tokens: 8000,
-//         system: getSystemPrompt()
-//     }).on('text', (text) => {
-//         console.log(text);
-//     });
-// }
-// main();

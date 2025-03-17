@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FileIcon, FolderIcon, ChevronRight, Terminal, ChevronDown, Code, Eye, CheckCircle2, Circle, Timer } from 'lucide-react';
 import Editor from "@monaco-editor/react";
+import { BACKEND_URL } from '../config';
+import axios from 'axios';
+import { mockSteps } from '../types';
+import { parseXml } from '../steps';
 
 const BuilderPage = () => {
   const location = useLocation();
@@ -11,13 +15,7 @@ const BuilderPage = () => {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'code' | 'preview'>('code');
 
-  const mockSteps = [
-    { id: 1, title: 'Initialize Project', status: 'completed' },
-    { id: 2, title: 'Install Dependencies', status: 'in-progress' },
-    { id: 3, title: 'Generate Components', status: 'pending' },
-    { id: 4, title: 'Setup Routing', status: 'pending' },
-    { id: 5, title: 'Add Styling', status: 'pending' },
-  ];
+  const [mockSteps, setMockSteps] = useState<mockSteps[]>([]); 
 
   const mockFiles = {
     src: {
@@ -35,6 +33,34 @@ const BuilderPage = () => {
     'package.json': '{\n  "name": "my-app",\n  "version": "1.0.0"\n}',
     'tsconfig.json': '{\n  "compilerOptions": {\n    "jsx": "react"\n  }\n}',
   };
+
+  useEffect(() => {
+      
+  }, [])
+
+  async function init(){
+    const response = await axios.post(`${BACKEND_URL}/template`,{
+      prompt: prompt.trim()
+    });
+
+    const {prompts, uiPrompts} = response.data;
+
+    setMockSteps(parseXml(uiPrompts[0]).map((x: mockSteps) => ({
+      ...x,
+      status: "pending"
+    })));
+
+    const stepsResponse = await axios.post(`${BACKEND_URL}/chat`, {
+      messgaes: [...prompts, prompt].map(content => ({
+        role: "user",
+        content
+      }))
+    })
+  }
+
+  useEffect(() => {
+    init();
+  }, [])
 
   const toggleFolder = (path: string) => {
     setExpandedFolders((prev) => {
