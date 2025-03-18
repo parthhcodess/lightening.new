@@ -139,12 +139,21 @@ const BuilderPage = () => {
   };
 
   const getFileContent = (path: string): string => {
-    const parts = path.split('/');
-    let current: any = files;
-    for (const part of parts) {
-      current = current[part];
-    }
-    return typeof current === 'string' ? current : JSON.stringify(current, null, 2);
+    const findFile = (items: FileItem[]): FileItem | undefined => {
+      for (const item of items) {
+        if (item.path === path) {
+          return item;
+        }
+        if (item.type === 'folder' && item.children) {
+          const found = findFile(item.children);
+          if (found) return found;
+        }
+      }
+      return undefined;
+    };
+
+    const file = findFile(files);
+    return file?.content || '';
   };
 
   const getFileLanguage = (filename: string): string => {
@@ -178,10 +187,10 @@ const BuilderPage = () => {
     }
   };
 
-  const renderFileTree = (structure: any, path = '') => {
-    return Object.entries(structure).map(([key, value]) => {
-      const fullPath = path ? `${path}/${key}` : key;
-      const isDirectory = typeof value === 'object';
+  const renderFileTree = (structure: FileItem[]) => {
+    return structure.map((item) => {
+      const fullPath = item.path;
+      const isDirectory = item.type === 'folder';
       const isExpanded = expandedFolders.has(fullPath);
 
       return (
@@ -200,11 +209,11 @@ const BuilderPage = () => {
             ) : (
               <FileIcon className="w-4 h-4 text-blue-400 mr-2" />
             )}
-            <span className="text-gray-300">{key}</span>
+            <span className="text-gray-300">{item.name}</span>
           </div>
-          {isDirectory && isExpanded && (
+          {isDirectory && isExpanded && item.children && (
             <div className="ml-4">
-              {renderFileTree(value, fullPath)}
+              {renderFileTree(item.children)}
             </div>
           )}
         </div>
