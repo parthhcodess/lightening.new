@@ -5,57 +5,121 @@ import { FileIcon, FolderIcon, ChevronRight, Terminal, ChevronDown, Code, Eye, C
 import Editor from "@monaco-editor/react";
 import { BACKEND_URL } from '../config';
 import axios from 'axios';
-import { mockSteps } from '../types';
+import { FileItem, MockStep, StepType } from '../types';
 import { parseXml } from '../steps';
 
 const BuilderPage = () => {
   const location = useLocation();
   const { prompt } = location.state || {};
+  const [llmMessages, setLlmMessages] = useState<{role: "user" | "assistant", content: string;}[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [templateSet, setTemplateSet] = useState(false);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['src']));
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'code' | 'preview'>('code');
 
-  const [mockSteps, setMockSteps] = useState<mockSteps[]>([]); 
+  const [mockSteps, setMockSteps] = useState<MockStep[]>([]); 
 
-  const mockFiles = {
-    src: {
-      components: {
-        'Header.tsx': 'export const Header = () => {\n  return <header>Header Component</header>;\n};',
-        'Footer.tsx': 'export const Footer = () => {\n  return <footer>Footer Component</footer>;\n};',
-      },
-      pages: {
-        'Home.tsx': 'export const Home = () => {\n  return <div>Home Page</div>;\n};',
-        'About.tsx': 'export const About = () => {\n  return <div>About Page</div>;\n};',
-      },
-      'App.tsx': 'import React from "react";\n\nexport const App = () => {\n  return <div>App Component</div>;\n};',
-      'index.tsx': 'import React from "react";\nimport ReactDOM from "react-dom";\nimport { App } from "./App";\n\nReactDOM.render(<App />, document.getElementById("root"));',
-    },
-    'package.json': '{\n  "name": "my-app",\n  "version": "1.0.0"\n}',
-    'tsconfig.json': '{\n  "compilerOptions": {\n    "jsx": "react"\n  }\n}',
-  };
+  const [files, setFiles] = useState<FileItem[]>([]);
 
   useEffect(() => {
-      
-  }, [])
+    let originalFiles = [...files];
+    let updateHappened = false;
+    mockSteps.filter(({status}) => status === "pending").map(step => {
+      updateHappened = true;
+      if (step?.type === StepType.CreateFile) {
+        let parsedPath = step.path?.split("/") ?? []; // ["src", "components", "App.tsx"]
+        let currentFileStructure = [...originalFiles]; // {}
+        let finalAnswerRef = currentFileStructure;
+  
+        let currentFolder = ""
+        while(parsedPath.length) {
+          currentFolder =  `${currentFolder}/${parsedPath[0]}`;
+          let currentFolderName = parsedPath[0];
+          parsedPath = parsedPath.slice(1);
 
-  async function init(){
-    const response = await axios.post(`${BACKEND_URL}/template`,{
+          if (!parsedPath.length) {
+            // final file
+            let file = currentFileStructure.find(x => x.path === currentFolder)
+            if (!file) {
+              currentFileStructure.push({
+                name: currentFolderName,
+                type: 'file',
+                path: currentFolder,
+                content: step.code
+              })
+            } else {
+              file.content = step.code;
+            }
+          } else {
+            /// in a folder
+            let folder = currentFileStructure.find(x => x.path === currentFolder)
+            if (!folder) {
+              // create the folder
+              currentFileStructure.push({
+                name: currentFolderName,
+                type: 'folder',
+                path: currentFolder,
+                children: []
+              })
+            }
+
+            currentFileStructure = currentFileStructure.find(x => x.path === currentFolder)!.children!;
+          }
+        }
+        originalFiles = finalAnswerRef;
+      }
+
+    })
+
+    if (updateHappened) {
+
+      setFiles(originalFiles)
+      setMockSteps(mockSteps => mockSteps.map((s: MockStep) => {
+        return {
+          ...s,
+          status: "completed"
+        }
+        
+      }))
+    }
+    console.log(files);
+  }, [mockSteps, files])
+
+  async function init() {
+    const response = await axios.post(`${BACKEND_URL}/template`, {
       prompt: prompt.trim()
     });
-
+    setTemplateSet(true);
+    
     const {prompts, uiPrompts} = response.data;
 
-    setMockSteps(parseXml(uiPrompts[0]).map((x: mockSteps) => ({
+    setMockSteps(parseXml(uiPrompts[0]).map((x: MockStep) => ({
       ...x,
       status: "pending"
     })));
 
+    setLoading(true);
     const stepsResponse = await axios.post(`${BACKEND_URL}/chat`, {
-      messgaes: [...prompts, prompt].map(content => ({
+      messages: [...prompts, prompt].map(content => ({
         role: "user",
         content
       }))
     })
+
+    setLoading(false);
+
+    setMockSteps(s => [...s, ...parseXml(stepsResponse.data.response).map(x => ({
+      ...x,
+      status: "pending" as "pending"
+    }))]);
+
+    setLlmMessages([...prompts, prompt].map(content => ({
+      role: "user",
+      content
+    })));
+
+    setLlmMessages(x => [...x, {role: "assistant", content: stepsResponse.data.response}])
   }
 
   useEffect(() => {
@@ -76,7 +140,7 @@ const BuilderPage = () => {
 
   const getFileContent = (path: string): string => {
     const parts = path.split('/');
-    let current: any = mockFiles;
+    let current: any = files;
     for (const part of parts) {
       current = current[part];
     }
@@ -188,7 +252,7 @@ const BuilderPage = () => {
         <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6 border border-gray-700/50">
           <h2 className="text-xl font-semibold mb-6 text-gray-200">Project Files</h2>
           <div className="font-mono text-sm">
-            {renderFileTree(mockFiles)}
+            {renderFileTree(files)}
           </div>
         </div>
 

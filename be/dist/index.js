@@ -43,7 +43,7 @@ app.post("/template", (req, res) => __awaiter(void 0, void 0, void 0, function* 
     }
     if (answer === "node") {
         res.json({
-            prompts: [`Here is an artifact that contains all files of the project visible to you.\nConsider the contents of ALL files in the project.\n\n${react_1.basePrompt}\n\nHere is a list of files that exist on the file system but are not being shown to you:\n\n  - .gitignore\n  - package-lock.json\n`],
+            prompts: [`Here is an artifact that contains all files of the project visible to you.\nConsider the contents of ALL files in the project.\n\n${node_1.basePrompt}\n\nHere is a list of files that exist on the file system but are not being shown to you:\n\n  - .gitignore\n  - package-lock.json\n`],
             uiPrompts: [node_1.basePrompt]
         });
         return;
@@ -60,7 +60,6 @@ app.post("/chat", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         max_tokens: 8000,
         system: (0, prompts_1.getSystemPrompt)()
     });
-    console.log(response);
     res.json({
         response: (_a = response.content[0]) === null || _a === void 0 ? void 0 : _a.text
     });

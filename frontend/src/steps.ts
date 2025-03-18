@@ -1,4 +1,4 @@
-import { mockSteps, StepType } from './types';
+import { MockStep, StepType } from './types';
 
 /*
  * Parse input XML and convert it into steps.
@@ -28,7 +28,7 @@ import { mockSteps, StepType } from './types';
  * 
  * The input can have strings in the middle they need to be ignored
  */
-export function parseXml(response: string): mockSteps[] {
+export function parseXml(response: string): MockStep[] {
     // Extract the XML content between <boltArtifact> tags
     const xmlMatch = response.match(/<boltArtifact[^>]*>([\s\S]*?)<\/boltArtifact>/);
     
@@ -37,7 +37,7 @@ export function parseXml(response: string): mockSteps[] {
     }
   
     const xmlContent = xmlMatch[1];
-    const steps: mockSteps[] = [];
+    const steps: MockStep[] = [];
     let stepId = 1;
   
     // Extract artifact title
